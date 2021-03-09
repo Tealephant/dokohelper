@@ -13,6 +13,7 @@ MAX_FPS = 15
 
 class GameGUI:
     CARDIMAGES = {}
+    CARDIMAGESHIGHLIGHTED = {}
     CARDHEIGHT = 140
     CARDWIDTH = 98
     def __init__(self, game, screen):
@@ -33,11 +34,22 @@ class GameGUI:
         self.sideboard.handleEvents(event)
         self.remaining.handleCardClick(event)
 
+    #draw a card, located here as it is used in multiple classes
+    @staticmethod
+    def drawCard(screen, card, x, y, width, height, highlighted):
+        #draws a Card with the top-left corner at (x,y)
+        draw_bordered_rounded_rect(screen, p.Rect(x, y, width+1, height+1), COLOR2, COLOR1, 7, 3)
+        if highlighted:
+            screen.blit(GameGUI.CARDIMAGESHIGHLIGHTED[card.GetType()], p.Rect(x, y, width, height))
+        else:
+            screen.blit(GameGUI.CARDIMAGES[card.GetType()], p.Rect(x, y, width, height))
+
     #load in images of the cards
     @staticmethod
     def loadCardImages():
         for card in FULLDECK:
             GameGUI.CARDIMAGES[card] = p.transform.scale(p.image.load("cards/" + card + ".png"), (GameGUI.CARDWIDTH, GameGUI.CARDHEIGHT))
+            GameGUI.CARDIMAGESHIGHLIGHTED[card] = p.transform.scale(p.image.load("cards/" + card + "h.png"), (GameGUI.CARDWIDTH, GameGUI.CARDHEIGHT))
 
 class TrickView:
     #displays the tricks
@@ -50,12 +62,7 @@ class TrickView:
         self.game = game
         self.screen = screen
 
-    def drawCard(self, card, x, y, width, height):
-        #draws a Card with the top-left corner at (x,y)
-        draw_bordered_rounded_rect(self.screen, p.Rect(x, y, width+1, height+1), COLOR2, COLOR1, 7, 3)
-        self.screen.blit(GameGUI.CARDIMAGES[card.GetType()], p.Rect(x, y, width, height))
-
-    def drawTrick(self, trick, mode, x, y):
+    def drawTrick(self, trick, x, y):
         #draws a box containing the cards played, the points made, and the winner of the trick
         #players must be passed to correctly display who played which card
         draw_bordered_rounded_rect(self.screen, p.Rect(x, y, self.TRICKWIDTH, self.TRICKHEIGHT), COLOR3, COLOR0, 7, 1)
@@ -66,7 +73,7 @@ class TrickView:
         self.screen.blit(textPoints, [x + 150, y + 8])
         #get the winner if the trick is completet
         if trick.IsCompletet():
-            textWinner = FONT2.render("Gewinner: " + trick.GetWinner(mode).GetName(), True, COLOR0)
+            textWinner = FONT2.render("Gewinner: " + trick.GetWinner(self.game.gameround.mode).GetName(), True, COLOR0)
         else:
             textWinner = FONT2.render("Gewinner: --", True, COLOR0)
         self.screen.blit(textWinner, [x + 250, y + 8])
@@ -76,18 +83,22 @@ class TrickView:
             cardx = x + 8 + i * (TrickView.CARDWIDTH + 10)
             #draw empty spaces for undecided cards
             if i < len(trick.cards):            
-                self.drawCard(trick.cards[i], cardx, y + 30, TrickView.CARDWIDTH, TrickView.CARDHEIGHT)
+                GameGUI.drawCard(self.screen, trick.cards[i], cardx, y + 30, TrickView.CARDWIDTH, TrickView.CARDHEIGHT, False)
             else:
                 draw_bordered_rounded_rect(self.screen, p.Rect(cardx, y + 30, TrickView.CARDWIDTH+1, TrickView.CARDHEIGHT+1), COLOR2, COLOR1, 7, 2)
             #draw player who played the card
-            playername = FONT2.render(trick.players[(i + trick.beginner.GetNr()) % 4].GetName(), True, COLOR0)
+            #draw winner highlighted
+            color = COLOR0
+            if trick.IsCompletet() and trick.players[(i + trick.beginner.GetNr()) % 4] == trick.GetWinner(self.game.gameround.mode):
+                color = COLORRED
+            playername = FONT2.render(trick.players[(i + trick.beginner.GetNr()) % 4].GetName(), True, color)
             self.screen.blit(playername, [cardx + 5, y + 35 + TrickView.CARDHEIGHT])
 
     def draw(self):
         for i in range(len(self.game.gameround.tricks)):
             x = (i % 3) * (self.TRICKWIDTH + 5) + 5
             y = (i // 3) * (self.TRICKHEIGHT + 5) + 5
-            self.drawTrick(self.game.gameround.tricks[i], self.game.gameround.mode, x, y)
+            self.drawTrick(self.game.gameround.tricks[i], x, y)
 
 
 class NewRoundMenu:
@@ -159,11 +170,8 @@ class Remaining:
     def __init__(self, game, screen):
         self.game = game
         self.screen = screen
+        self.hovercard = -1 #save the cardindex of the card affected by hover
 
-    def drawCard(self, card, x, y, width, height):
-        #draws a Card with the top-left corner at (x,y)
-        draw_bordered_rounded_rect(self.screen, p.Rect(x, y, width+1, height+1), COLOR2, COLOR1, 7, 3)
-        self.screen.blit(GameGUI.CARDIMAGES[card.GetType()], p.Rect(x, y, width, height))
 
     def draw(self):
         #overdraw with white
@@ -172,7 +180,11 @@ class Remaining:
         p.draw.rect(self.screen, p.Color("white"), rect, 0)
         #draw cards
         for i in range(len(self.game.gameround.deck.cards)):
-            self.drawCard(self.game.gameround.deck.cards[i], self.STARTX + i * self.CARDOFFSET, self.STARTY, self.CARDWIDTH, self.CARDHEIGHT)
+            if i == self.hovercard:
+                #this card is hovered and must be highlighted
+                GameGUI.drawCard(self.screen, self.game.gameround.deck.cards[i], self.STARTX + i * self.CARDOFFSET, self.STARTY, self.CARDWIDTH, self.CARDHEIGHT, True)
+            else:
+                GameGUI.drawCard(self.screen, self.game.gameround.deck.cards[i], self.STARTX + i * self.CARDOFFSET, self.STARTY, self.CARDWIDTH, self.CARDHEIGHT, False)
 
     def handleCardClick(self, event):
         if event.type == p.MOUSEBUTTONDOWN:
@@ -187,6 +199,19 @@ class Remaining:
                 rect = p.Rect(self.STARTX + lastCardOffset * self.CARDOFFSET, self.STARTY, self.CARDWIDTH, self.CARDHEIGHT)
                 if rect.collidepoint(event.pos):
                     self.game.gameround.playCard(lastCardOffset)
+        elif event.type == p.MOUSEMOTION:
+            #hovereffect
+            self.hovercard = -1 #reset hovercard
+            lastCardOffset = len(self.game.gameround.deck.cards) - 1
+            for pos in range(lastCardOffset):
+                rect = p.Rect(self.STARTX + pos * self.CARDOFFSET, self.STARTY, self.CARDOFFSET, self.CARDHEIGHT)
+                if rect.collidepoint(event.pos):
+                    self.hovercard = pos
+                    break
+            if lastCardOffset >= 0:
+                rect = p.Rect(self.STARTX + lastCardOffset * self.CARDOFFSET, self.STARTY, self.CARDWIDTH, self.CARDHEIGHT)
+                if rect.collidepoint(event.pos):
+                    self.hovercard = lastCardOffset
 
 
 class Sideboard:
