@@ -217,7 +217,7 @@ class Round:
     def CheckTeams(self):
         #checks if the teams are derivable from the current gamestate and sets them if possible    
         mode = self.mode.GetType()    
-        if mode == "normal":
+        if mode == "normal" or mode == "normals":
             #check for CQ in normal game
             #saves amount of CQ played to detect if teams are set
             cqPlayed = 0
@@ -237,7 +237,17 @@ class Round:
                         #team is not automatically assigned -> these players must be contra
                         player.SetTeam(2)
                         player.SetLocked(True)
-        #todo: other gamemodes
+        elif mode in SOLI:
+            #solo player is re, other players contra
+            self.beginner.SetTeam(1)
+            self.beginner.SetLocked(True)
+            for player in self.players:
+                if not player.GetLocked():
+                    player.SetTeam(2)
+                    player.SetLocked(True)
+        elif mode == "hochzeit" or mode == "hochzeits" or mode == "armut" or mode == "armuts":
+            #would require team-choosing in new round menu. Pretty useless
+            pass
 
 
 #Players in the Game
@@ -277,14 +287,11 @@ class Mode:
         self.__heart10active = False
         if self.__type in HEART10GAMES:
             self.__heart10active = True
-        self.__deck = DECKFORMODE[self.__type]
 
     def GetType(self):
         return self.__type
     def GetHeart10Active(self):
         return self.__heart10active
-    def GetDeck(self):
-        return self.__deck
     def GetName(self):
         return MODI[self.__type]
 
@@ -300,7 +307,7 @@ class Deck:
         #add all cards to the deck
         for type in FULLDECK:
             #set trump cards depending on game mode
-            if type in TRUMPCARDS[mode.GetDeck()]:
+            if type in RANKS[mode.GetType()]:
                 for i in range(2):
                     self.cards.append(Card(type, True))
             else:

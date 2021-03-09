@@ -3,7 +3,7 @@ from buttons import *
 from roundedRectangle import *
 from dokoengine import *
 
-VERSION = "0.0.1"
+VERSION = "1.0"
 
 p.display.set_caption("Dokohelper V" + VERSION)
 WIDTH = 1920
@@ -110,12 +110,15 @@ class NewRoundMenu:
         self.screen = screen
         self.game = game #required to start the new round from the menu
         #create Buttons for each gamemode
-        self.modes = [mode for mode in MODI]
+        self.modes = [mode for mode in MODINOSCHWEIN]
         self.players = [player.GetName() for player in players]
         self.active = False
         self.modeNames = [MODI[mode] for mode in self.modes]
         self.modeBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.STARTY + 80, self.WIDTH - 100, self.modeNames, self.modes)
-        self.playerBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.STARTY + 110 + self.modeBoxes.GetHeight(), self.WIDTH - 100, self.players, self.players)
+        self.playerBoxOffset = self.STARTY + 130 + self.modeBoxes.GetHeight()
+        self.playerBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.playerBoxOffset, self.WIDTH - 100, self.players, self.players)
+        self.schweinBoxes = RadioBoxGroup(self.screen, self.STARTX + 50,
+            self.STARTY + 175 + self.modeBoxes.GetHeight() + self.playerBoxes.GetHeight(), self.WIDTH - 100, ["Nein", "Ja"], ["no", "yes"])
         self.exitButton = Button(self.screen, self.STARTX + self.WIDTH - 300, self.STARTY + self.HEIGHT - 70, "Abbrechen", self.cancel, COLOR0, COLOR_ACTIVE)
         self.startButton = Button(self.screen, self.STARTX + self.WIDTH - 150, self.STARTY + self.HEIGHT - 70, "Starten", self.start, COLOR0, COLOR_ACTIVE)
 
@@ -124,8 +127,10 @@ class NewRoundMenu:
 
     def start(self):
         self.active = False
+        #get schweinchen status
+        schwein = "s" if self.schweinBoxes.returnSelected() == "yes" else ""
         #get selected mode from the modeBoxes
-        mode = Mode(self.modeBoxes.returnSelected())
+        mode = Mode(self.modeBoxes.returnSelected() + schwein)
         beginner = self.game.players[self.playerBoxes.active]
         self.game.newRound(mode, beginner)
 
@@ -143,6 +148,13 @@ class NewRoundMenu:
             textPlayer = FONT0.render("Startspieler: ", True, COLOR0)
             self.screen.blit(textPlayer, [self.STARTX + 50, self.STARTY + self.modeBoxes.GetHeight() + 85])
             self.playerBoxes.draw()
+            #draw Schwein menu if available
+            mode = self.modeBoxes.returnSelected()
+            if mode in SCHWEINAVAILABLE:
+                #schweinmenu is available
+                textSchwein = FONT0.render("Schweinchen: ", True, COLOR0)
+                self.screen.blit(textSchwein, [self.STARTX + 50, self.STARTY + self.modeBoxes.GetHeight() + self.playerBoxes.GetHeight() + 130])
+                self.schweinBoxes.draw()
             #draw exxit and start button
             self.exitButton.draw()
             self.startButton.draw()
@@ -150,13 +162,16 @@ class NewRoundMenu:
     def handle_event(self, event):
         self.modeBoxes.handle_event(event)
         self.playerBoxes.handle_event(event)
+        if self.modeBoxes.returnSelected() in SCHWEINAVAILABLE:
+            #schweinmenu is available
+            self.schweinBoxes.handle_event(event)
         self.exitButton.handle_event(event)
         self.startButton.handle_event(event)
     
     def updatePlayerNames(self, players):
         #updates the player names in case they got changed. should be called before opening the menu
         self.players = [player.GetName() for player in players]
-        self.playerBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.STARTY + 180, self.WIDTH - 100, self.players, self.players)
+        self.playerBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.playerBoxOffset, self.WIDTH - 100, self.players, self.players)
 
 
 #draws the remaining cards, that have not been played yet
