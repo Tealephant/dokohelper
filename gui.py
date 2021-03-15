@@ -40,9 +40,9 @@ class GameGUI:
         #draws a Card with the top-left corner at (x,y)
         draw_bordered_rounded_rect(screen, p.Rect(x, y, width+1, height+1), COLOR2, COLOR1, 7, 3)
         if highlighted:
-            screen.blit(GameGUI.CARDIMAGESHIGHLIGHTED[card.GetType()], p.Rect(x, y, width, height))
+            screen.blit(GameGUI.CARDIMAGESHIGHLIGHTED[card.type], p.Rect(x, y, width, height))
         else:
-            screen.blit(GameGUI.CARDIMAGES[card.GetType()], p.Rect(x, y, width, height))
+            screen.blit(GameGUI.CARDIMAGES[card.type], p.Rect(x, y, width, height))
 
     #load in images of the cards
     @staticmethod
@@ -73,7 +73,7 @@ class TrickView:
         self.screen.blit(textPoints, [x + 150, y + 8])
         #get the winner if the trick is completet
         if trick.IsCompletet():
-            textWinner = FONT2.render("Gewinner: " + trick.GetWinner(self.game.gameround.mode).GetName(), True, COLOR0)
+            textWinner = FONT2.render("Gewinner: " + trick.GetWinner(self.game.gameround.mode).name, True, COLOR0)
         else:
             textWinner = FONT2.render("Gewinner: --", True, COLOR0)
         self.screen.blit(textWinner, [x + 250, y + 8])
@@ -89,9 +89,9 @@ class TrickView:
             #draw player who played the card
             #draw winner highlighted
             color = COLOR0
-            if trick.IsCompletet() and trick.players[(i + trick.beginner.GetNr()) % 4] == trick.GetWinner(self.game.gameround.mode):
+            if trick.IsCompletet() and trick.players[(i + trick.beginner.nr) % 4] == trick.GetWinner(self.game.gameround.mode):
                 color = COLORRED
-            playername = FONT2.render(trick.players[(i + trick.beginner.GetNr()) % 4].GetName(), True, color)
+            playername = FONT2.render(trick.players[(i + trick.beginner.nr) % 4].name, True, color)
             self.screen.blit(playername, [cardx + 5, y + 35 + TrickView.CARDHEIGHT])
 
     def draw(self):
@@ -111,7 +111,7 @@ class NewRoundMenu:
         self.game = game #required to start the new round from the menu
         #create Buttons for each gamemode
         self.modes = [mode for mode in MODINOSCHWEIN]
-        self.players = [player.GetName() for player in players]
+        self.players = [player.name for player in players]
         self.active = False
         self.modeNames = [MODI[mode] for mode in self.modes]
         self.modeBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.STARTY + 80, self.WIDTH - 100, self.modeNames, self.modes)
@@ -170,7 +170,7 @@ class NewRoundMenu:
     
     def updatePlayerNames(self, players):
         #updates the player names in case they got changed. should be called before opening the menu
-        self.players = [player.GetName() for player in players]
+        self.players = [player.name for player in players]
         self.playerBoxes = RadioBoxGroup(self.screen, self.STARTX + 50, self.playerBoxOffset, self.WIDTH - 100, self.players, self.players)
 
 
@@ -243,7 +243,7 @@ class Sideboard:
         self.newRoundMenu = NewRoundMenu(self.screen, self.game.players, self.game)
 
         for i in range(4):
-            self.playerFields.append(InputBox(self.STARTX, self.STARTY + 65 + i * 50, 200, 32, self.game.gameround.players[i].GetName()))
+            self.playerFields.append(InputBox(self.STARTX, self.STARTY + 65 + i * 50, 200, 32, self.game.gameround.players[i].name))
             self.boxPairs.append(ReContraPair(self.STARTX + 280, self.STARTY + 65 + i * 50, self.game, i))
         
 
@@ -281,7 +281,7 @@ class Sideboard:
     def drawPlayers(self):
         for i in range(4):
             player = self.game.gameround.players[i]
-            strPlayerinfo = str(player.GetPoints())
+            strPlayerinfo = str(player.points)
             strPlayerinfo += (5 - len(strPlayerinfo)) * " "
             textPlayerinfo = FONT1.render(strPlayerinfo, True, COLOR0)
             self.screen.blit(textPlayerinfo, [self.STARTX + 220, self.STARTY + 70 + i * 50])

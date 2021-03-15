@@ -50,8 +50,8 @@ class ReContraPair:
         screen.blit(self.txt_surface1, (self.rect1.x+5, self.rect1.y+5))    
         screen.blit(self.txt_surface2, (self.rect2.x+5, self.rect2.y+5))
         #redraws borders depending on which option is active
-        active = self.game.players[self.nr].GetTeam()
-        locked = self.game.players[self.nr].GetLocked()
+        active = self.game.players[self.nr].team
+        locked = self.game.players[self.nr].locked
         if active == 0:
             #remove highlighting borders
             p.draw.rect(screen, COLORWHITE, self.rect1, 2)
@@ -71,22 +71,22 @@ class ReContraPair:
 
     def handle_event(self, event):
         #handle the clicks
-        if not self.game.players[self.nr].GetLocked():
+        if not self.game.players[self.nr].locked:
             #only changable if not locked
             if event.type == p.MOUSEBUTTONDOWN:
-                active = self.game.players[self.nr].GetTeam()
+                active = self.game.players[self.nr].team
                 if self.rect1.collidepoint(event.pos):
                     #re selected
                     if active == 1:
-                        self.game.players[self.nr].SetTeam(0)
+                        self.game.players[self.nr].team = 0
                     else:
-                        self.game.players[self.nr].SetTeam(1)
+                        self.game.players[self.nr].team = 1
                 elif self.rect2.collidepoint(event.pos):
                     #contra selected
                     if active == 2:
-                        self.game.players[self.nr].SetTeam(0)
+                        self.game.players[self.nr].team = 0
                     else:
-                        self.game.players[self.nr].SetTeam(2)
+                        self.game.players[self.nr].team = 2
 
 class Button:
     def __init__(self, screen, x, y, text, callback, color, hoverColor):
