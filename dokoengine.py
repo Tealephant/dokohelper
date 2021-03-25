@@ -134,6 +134,7 @@ class Round:
         #the players team must also be reset
         self.ResetPlayerTeams()
         self.teamsLocked = False #true if teams are decided
+        self.CheckTeams()
 
 
     def GetPlayerPoints(self, nr):
@@ -238,7 +239,7 @@ class Round:
             self.beginner.locked = True
             for player in self.players:
                 if not player.locked:
-                    player.team = 1
+                    player.team = 2
                     player.locked = True
         elif mode == "hochzeit" or mode == "hochzeits" or mode == "armut" or mode == "armuts":
             #would require team-choosing in new round menu. Pretty useless
